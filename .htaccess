@@ -1,0 +1,56 @@
+RewriteEngine On
+
+# ✅ Дозволити лише .pdf у /templates/output/ і вкладених
+RewriteCond %{REQUEST_URI} ^/templates/output/ [NC]
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteCond %{REQUEST_URI} !\.pdf$ [NC]
+RewriteRule ^ - [F]
+
+# ✅ Дозволити PDF-файли у /templates/output/ і вкладених
+RewriteCond %{REQUEST_URI} ^/templates/output/ [NC]
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# ❌ Заборонити відкриття папок (у т.ч. вкладених) в /templates/output/
+RewriteCond %{REQUEST_URI} ^/templates/output/ [NC]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [F]
+
+# 🌐 Основна маршрутизація: все інше — на index.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]
+
+# 🔒 Безпека: критичні файли
+<FilesMatch "\.(htaccess|htpasswd|env|ini|log|sql|bak|backup|conf|config)$">
+    Require all denied
+</FilesMatch>
+
+# 🔒 Заборонити доступ до PHP (крім index.php)
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/+(.+)\.php[\s?] [NC]
+RewriteCond %1 !^index$
+RewriteRule ^ - [F]
+
+# 🔒 Блокування SQL / script ін'єкцій
+RewriteCond %{REQUEST_URI} !^/api/ [NC]
+RewriteCond %{QUERY_STRING} \b(union|select|insert|delete|update|drop|create|alter)\s*(\(|\=) [NC,OR]
+RewriteCond %{QUERY_STRING} (script|javascript|vbscript) [NC,OR]
+RewriteCond %{QUERY_STRING} (<|%3C)([^s]*s)+cript.*(>|%3E) [NC,OR]
+RewriteCond %{QUERY_STRING} %00 [NC]
+RewriteRule ^ - [F,L]
+
+# 🔒 Приховані файли
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# ❌ Заборонити листинг папок
+Options -Indexes
+
+# 🔧 PHP безпечні параметри
+<IfModule mod_php.c>
+    php_flag display_errors Off
+    php_flag expose_php Off
+    php_flag allow_url_fopen Off
+    php_flag allow_url_include Off
+</IfModule>
