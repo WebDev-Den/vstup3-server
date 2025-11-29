@@ -1,56 +1,62 @@
-RewriteEngine On
+# ===========================================================
+# PHP API - Єдина точка входу
+# Всі запити → index.php (крім реальних файлів)
+# ===========================================================
 
-# ✅ Дозволити лише .pdf у /templates/output/ і вкладених
-RewriteCond %{REQUEST_URI} ^/templates/output/ [NC]
-RewriteCond %{REQUEST_FILENAME} -f
-RewriteCond %{REQUEST_URI} !\.pdf$ [NC]
-RewriteRule ^ - [F]
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Базова директорія
+    RewriteBase /api
+    
+    # ========================================================
+    # ВИКЛЮЧЕННЯ: Дозволити реальні файли та директорії
+    # ========================================================
+    
+    # Якщо це реальний файл - дозволити доступ
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+    
+    # Якщо це реальна директорія - дозволити доступ
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+    
+    # ========================================================
+    # МАРШРУТИЗАЦІЯ: Все інше → index.php
+    # ========================================================
+    
+    # Приклади що спрацюють:
+    # /api/ → index.php
+    # /api/asdasdas → index.php
+    # /api/v0/user/login → index.php
+    # /api/anything/else/here → index.php
+    
+    RewriteRule ^(.*)$ index.php [QSA,L]
+    
+</IfModule>
 
-# ✅ Дозволити PDF-файли у /templates/output/ і вкладених
-RewriteCond %{REQUEST_URI} ^/templates/output/ [NC]
-RewriteCond %{REQUEST_FILENAME} -f
-RewriteRule ^ - [L]
+# ===========================================================
+# ЗАХИСТ ФАЙЛІВ
+# ===========================================================
 
-# ❌ Заборонити відкриття папок (у т.ч. вкладених) в /templates/output/
-RewriteCond %{REQUEST_URI} ^/templates/output/ [NC]
-RewriteCond %{REQUEST_FILENAME} -d
-RewriteRule ^ - [F]
+# Заборонити доступ до конфігураційних файлів
+RedirectMatch 403 /\.env$
+RedirectMatch 403 /config\.php$
+RedirectMatch 403 /\.htaccess$
+RedirectMatch 403 /\.htpasswd$
 
-# 🌐 Основна маршрутизація: все інше — на index.php
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^ index.php [QSA,L]
+# Заборонити приховані файли Unix
+RedirectMatch 403 /\.[^/]+$
 
-# 🔒 Безпека: критичні файли
-<FilesMatch "\.(htaccess|htpasswd|env|ini|log|sql|bak|backup|conf|config)$">
-    Require all denied
-</FilesMatch>
+# Заборонити небезпечні розширення
+RedirectMatch 403 \.(ini|log|sql|bak|backup|conf|dist|sh|bat)$
 
-# 🔒 Заборонити доступ до PHP (крім index.php)
-RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/+(.+)\.php[\s?] [NC]
-RewriteCond %1 !^index$
-RewriteRule ^ - [F]
+# ===========================================================
+# ОПЦІЇ
+# ===========================================================
 
-# 🔒 Блокування SQL / script ін'єкцій
-RewriteCond %{REQUEST_URI} !^/api/ [NC]
-RewriteCond %{QUERY_STRING} \b(union|select|insert|delete|update|drop|create|alter)\s*(\(|\=) [NC,OR]
-RewriteCond %{QUERY_STRING} (script|javascript|vbscript) [NC,OR]
-RewriteCond %{QUERY_STRING} (<|%3C)([^s]*s)+cript.*(>|%3E) [NC,OR]
-RewriteCond %{QUERY_STRING} %00 [NC]
-RewriteRule ^ - [F,L]
-
-# 🔒 Приховані файли
-<FilesMatch "^\.">
-    Require all denied
-</FilesMatch>
-
-# ❌ Заборонити листинг папок
+# Заборонити листинг директорій
 Options -Indexes
 
-# 🔧 PHP безпечні параметри
-<IfModule mod_php.c>
-    php_flag display_errors Off
-    php_flag expose_php Off
-    php_flag allow_url_fopen Off
-    php_flag allow_url_include Off
-</IfModule>
+# Дозволити FollowSymLinks (потрібно для RewriteRule)
+Options +FollowSymLinks

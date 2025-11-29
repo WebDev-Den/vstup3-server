@@ -14,5 +14,7 @@ $HTTP_KEY_LICENSE = [
     'bV3mqE4sZ7viS1wnI9zlP2qjL5rpHl'
 ];
 
+define('DOCUMENT_ROOT_SCRIPT', '/var/www/html/server');
+define('BASE_PDF_URL', 'https://vstup.khmnu.edu.ua');
 
 ?>

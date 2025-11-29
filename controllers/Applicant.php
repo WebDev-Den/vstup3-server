@@ -26,7 +26,8 @@ class ControllerApplicant extends Controller
         }
 
 
-        $templates = $_SERVER["DOCUMENT_ROOT"] . '/templates/';
+        $templates = DOCUMENT_ROOT_SCRIPT . '/templates/';
+
         $data = [];
         $temp = new \App\Services\Templates($user);
         switch ($type) {
@@ -60,7 +61,7 @@ class ControllerApplicant extends Controller
         }
 
 
-        $dir = $_SERVER["DOCUMENT_ROOT"] . '/templates/output/' . date('Y/m/d/', strtotime($user['created_at'])) . 'user-' . $user['id'] . '/';
+        $dir = DOCUMENT_ROOT_SCRIPT . '/templates/output/' . date('Y/m/d/', strtotime($user['created_at'])) . 'user-' . $user['id'] . '/';
 
         if (!file_exists($dir)) {
             mkdir($dir, 0755, true);
@@ -77,7 +78,7 @@ class ControllerApplicant extends Controller
 
 
         if ($result['success'] && file_exists($result['outputPath'])) {
-            $url = str_replace($_SERVER["DOCUMENT_ROOT"], 'https://pdf.web-dev.uno/', $result['outputPath']);
+            $url = str_replace(DOCUMENT_ROOT_SCRIPT, BASE_PDF_URL, $result['outputPath']);
             return ['url' => $url];
         }
 

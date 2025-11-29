@@ -7,7 +7,7 @@ class Templates
     {
         $this->user = $userData;
         $faculty = [];
-        $file = '/var/www/vstup_2/src/data/faculty.json';
+        $file = '/var/www/html/client/src/data/faculty.json';
         if (file_exists($file)) {
             $faculty = file_get_contents($file);
             $this->faculty = json_decode($faculty, true);
