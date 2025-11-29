@@ -1,0 +1,18 @@
+<?php
+define("JWT_KEY", "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+define("JWT_TIME", 3600);
+define("JWT_TIME_REFRESH", 2592000);
+
+
+define("DB_HOST", '127.0.0.1');
+define("DB_USER", 'login_bd');
+define("DB_PASSWORD", 'password_bd');
+define("DB_NAME", 'bd');
+
+
+$HTTP_KEY_LICENSE = [
+    'XXXXXXXXXXXXXXXXXXXX'
+];
+
+
+?>
