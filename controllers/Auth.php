@@ -41,15 +41,24 @@ class ControllerAuth extends Controller
         $role = intval($this->data_query['roleId']);
         $userID = intval($this->data_query['userId']);
 
+        // Отримуємо facultyId якщо він переданий (обов'язковий для деканів)
+        $facultyId = $this->data_query['facultyId'] ?? null;
 
         $role_out = 'user';
         switch ($role) {
             case 2:
                 $role_out = 'admin';
                 break;
-
+            case 3:
+                $role_out = 'dean';
+                // Для декана обов'язково потрібен facultyId
+                if (empty($facultyId)) {
+                    \App\Core\Response::badRequest("Faculty ID is required for dean role", "invalid_data");
+                }
+                break;
         }
-        return \App\Models\Auth::setRole($userID, $role_out);
+
+        return \App\Models\Auth::setRole($userID, $role_out, $facultyId);
     }
 
     function query_GetUsers()

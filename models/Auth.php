@@ -16,11 +16,24 @@ class Auth
         return false;
     }
 
-    static function setRole($user_id, $role)
+    static function setRole($user_id, $role, $faculty_id = null)
     {
         $user = \R::findOne(self::$table, 'id = ?', [$user_id]);
         if ($user !== null) {
             $user->role = $role;
+
+            // Для деканів обов'язково встановлюємо faculty_id
+            if ($role === 'dean') {
+                if (empty($faculty_id)) {
+                    // Якщо не передано faculty_id для декана - помилка
+                    return false;
+                }
+                $user->faculty_id = $faculty_id;
+            } else {
+                // Для інших ролей очищуємо faculty_id
+                $user->faculty_id = null;
+            }
+
             return \R::store($user);
         }
         return false;
@@ -39,14 +52,23 @@ class Auth
         $out = [];
 
         foreach ($users as $user) {
+            // Визначення role_id на основі role_name
+            $role_id = 1; // user за замовчуванням
+            if ($user->role === 'admin') {
+                $role_id = 2;
+            } elseif ($user->role === 'dean') {
+                $role_id = 3;
+            }
+
             $out[] = [
                 'id' => (int)$user->id,
                 'email' => $user->email,
                 'fio' => $user->fio,
                 'specialty' => $user->specialty,
                 'role_name' => $user->role,
-                'role_id' => $user->role == 'user' ? 1 : 2,
-                'is_active' => (bool)$user->is_active
+                'role_id' => $role_id,
+                'is_active' => (bool)$user->is_active,
+                'faculty_id' => $user->faculty_id ?? null // Додано для деканів
             ];
         }
 
@@ -65,6 +87,14 @@ class Auth
     {
         $user = \R::findOne(self::$table, 'id = ?', [$user_id]);
         if ($user) {
+            // Визначення role_id на основі role_name
+            $role_id = 1; // user за замовчуванням
+            if ($user->role === 'admin') {
+                $role_id = 2;
+            } elseif ($user->role === 'dean') {
+                $role_id = 3;
+            }
+
             return [
                 'id' => $user->id,
                 'fio' => $user->fio,
@@ -72,7 +102,8 @@ class Auth
                 'is_active' => intval($user->is_active) == 1,
                 'specialty' => $user->specialty,
                 'role_name' => $user->role,
-                'role_id' => $user->role == 'user' ? 1 : 2,
+                'role_id' => $role_id,
+                'faculty_id' => $user->faculty_id ?? null // Додано для деканів
             ];
         }
 
@@ -89,6 +120,15 @@ class Auth
         if (!$isValid) {
             \App\Core\Response::badRequest("Invalid password", "invalid_password");
         }
+
+        // Визначення role_id на основі role_name
+        $role_id = 1; // user за замовчуванням
+        if ($user->role === 'admin') {
+            $role_id = 2;
+        } elseif ($user->role === 'dean') {
+            $role_id = 3;
+        }
+
         return [
             'id' => $user->id,
             'fio' => $user->fio,
@@ -96,6 +136,8 @@ class Auth
             'is_active' => intval($user->is_active) == 1,
             'specialty' => $user->specialty,
             'role_name' => $user->role,
+            'role_id' => $role_id,
+            'faculty_id' => $user->faculty_id ?? null // Додано для деканів
         ];
     }
 

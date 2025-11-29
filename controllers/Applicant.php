@@ -5,7 +5,7 @@ class ControllerApplicant extends Controller
 {
     function query_GetPdf()
     {
-        $user = \App\Core\Validate::roles(['admin', 'user']);
+        $user = \App\Core\Validate::roles(['admin', 'user', 'dean']);
         if (!$user['is_active']) {
             \App\Core\Response::forbidden('User not active');
         }
@@ -20,16 +20,23 @@ class ControllerApplicant extends Controller
 
         }
 
-        $user = \App\Models\Applicant::getItemByID($id);
-        if (!$user) {
+        $applicant = \App\Models\Applicant::getItemByID($id);
+        if (!$applicant) {
             \App\Core\Response::badRequest("User not found", "invalid_data");
+        }
+
+        // Для деканів перевіряємо чи заявка належить їх факультету
+        if ($user['role_name'] === 'dean' && !empty($user['faculty_id'])) {
+            if ($applicant['faculty_key'] !== $user['faculty_id']) {
+                \App\Core\Response::forbidden('You can only generate PDF for applications from your faculty');
+            }
         }
 
 
         $templates = DOCUMENT_ROOT_SCRIPT . '/templates/';
 
         $data = [];
-        $temp = new \App\Services\Templates($user);
+        $temp = new \App\Services\Templates($applicant);
         switch ($type) {
             case 'contract':
                 $res = $temp->getContract();
@@ -61,7 +68,7 @@ class ControllerApplicant extends Controller
         }
 
 
-        $dir = DOCUMENT_ROOT_SCRIPT . '/templates/output/' . date('Y/m/d/', strtotime($user['created_at'])) . 'user-' . $user['id'] . '/';
+        $dir = DOCUMENT_ROOT_SCRIPT . '/templates/output/' . date('Y/m/d/', strtotime($applicant['created_at'])) . 'user-' . $applicant['id'] . '/';
 
         if (!file_exists($dir)) {
             mkdir($dir, 0755, true);
@@ -88,7 +95,7 @@ class ControllerApplicant extends Controller
 
     function query_DeleteRequests()
     {
-        $user = \App\Core\Validate::roles(['admin', 'user']);
+        $user = \App\Core\Validate::roles(['admin', 'user', 'dean']);
         if (!$user['is_active']) {
             \App\Core\Response::forbidden('User not active');
         }
@@ -98,12 +105,21 @@ class ControllerApplicant extends Controller
             \App\Core\Response::badRequest("Id empty", "invalid_data");
 
         }
+
+        // Для деканів перевіряємо чи заявка належить їх факультету
+        if ($user['role_name'] === 'dean' && !empty($user['faculty_id'])) {
+            $existingItem = \App\Models\Applicant::getItemByID($id);
+            if (!$existingItem || $existingItem['faculty_key'] !== $user['faculty_id']) {
+                \App\Core\Response::forbidden('You can only delete applications from your faculty');
+            }
+        }
+
         return \App\Models\Applicant::delete($id);
     }
 
     function query_GetRequests()
     {
-        $user = \App\Core\Validate::roles(['admin', 'user']);
+        $user = \App\Core\Validate::roles(['admin', 'user', 'dean']);
         if (!$user['is_active']) {
             \App\Core\Response::forbidden('User not active');
         }
@@ -124,13 +140,19 @@ class ControllerApplicant extends Controller
             'specialty' => $this->data_query['specialty'] ?? null,
             'payment_type' => $this->data_query['payment_type'] ?? null,
         ];
+
+        // Для деканів примусово фільтруємо тільки по їх факультету
+        if ($user['role_name'] === 'dean' && !empty($user['faculty_id'])) {
+            $props['faculty'] = $user['faculty_id'];
+        }
+
         return \App\Models\Applicant::getList($this->data_query["page"] ?? 1, $this->data_query['limit'] ?? 10, $props);
 
     }
 
     function query_PutRequests()
     {
-        $user = \App\Core\Validate::roles(['admin', 'user']);
+        $user = \App\Core\Validate::roles(['admin', 'user', 'dean']);
         if (!$user['is_active']) {
             \App\Core\Response::forbidden('User not active');
         }
@@ -141,7 +163,20 @@ class ControllerApplicant extends Controller
 
         }
 
+        // Для деканів перевіряємо чи заявка належить їх факультету
+        if ($user['role_name'] === 'dean' && !empty($user['faculty_id'])) {
+            $existingItem = \App\Models\Applicant::getItemByID($id);
+            if (!$existingItem || $existingItem['faculty_key'] !== $user['faculty_id']) {
+                \App\Core\Response::forbidden('You can only edit applications from your faculty');
+            }
+        }
+
         $data = $this->getApplicantData();;
+
+        // Для деканів примусово встановлюємо їх факультет
+        if ($user['role_name'] === 'dean' && !empty($user['faculty_id'])) {
+            $data['faculty_key'] = $user['faculty_id'];
+        }
 
         $searchCriteria = [
             'specialty_key' => $data['specialty_key'],
@@ -164,12 +199,17 @@ class ControllerApplicant extends Controller
 
     function query_PostRequests()
     {
-        $user = \App\Core\Validate::roles(['admin', 'user']);
+        $user = \App\Core\Validate::roles(['admin', 'user', 'dean']);
         if (!$user['is_active']) {
             \App\Core\Response::forbidden('User not active');
         }
 
         $data = $this->getApplicantData();;
+
+        // Для деканів примусово встановлюємо їх факультет
+        if ($user['role_name'] === 'dean' && !empty($user['faculty_id'])) {
+            $data['faculty_key'] = $user['faculty_id'];
+        }
 
         $searchCriteria = [
             'specialty_key' => $data['specialty_key'],
