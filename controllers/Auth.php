@@ -77,6 +77,37 @@ class ControllerAuth extends Controller
         return ['user' => $user];
     }
 
+    function query_PutProfile()
+    {
+        $user = \App\Core\Validate::roles();
+        $userId = $user['id'];
+
+        // Отримуємо дані для оновлення
+        $fio = $this->data_query['fio'] ?? null;
+        $specialty = $this->data_query['specialty'] ?? null;
+        $password = $this->data_query['password'] ?? null;
+
+        // Валідація
+        if ($fio !== null && strlen($fio) < 3) {
+            \App\Core\Response::badRequest("Full name must be more than 3 characters", "fio_error");
+        }
+
+        if ($password !== null && strlen($password) < 6) {
+            \App\Core\Response::badRequest("Password length is less than 6 characters", "password_length");
+        }
+
+        // Оновлюємо профіль
+        $result = \App\Models\Auth::updateProfile($userId, $fio, $specialty, $password);
+
+        if (!$result) {
+            \App\Core\Response::serverError("Failed to update profile");
+        }
+
+        // Повертаємо оновлені дані
+        $updatedUser = \App\Models\Auth::getUserByID($userId);
+        return ['user' => $updatedUser];
+    }
+
     function query_PostLogin($create = false)
     {
         $email = $this->data_query['email'];

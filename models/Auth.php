@@ -141,6 +141,29 @@ class Auth
         ];
     }
 
+    static function updateProfile($user_id, $fio = null, $specialty = null, $password = null)
+    {
+        $user = \R::findOne(self::$table, 'id = ?', [$user_id]);
+        if ($user === null) {
+            return false;
+        }
+
+        // Оновлюємо тільки передані поля
+        if ($fio !== null) {
+            $user->fio = $fio;
+        }
+
+        if ($specialty !== null) {
+            $user->specialty = $specialty;
+        }
+
+        if ($password !== null) {
+            $user->password = \App\Core\PasswordManager::hash($password);
+        }
+
+        return \R::store($user);
+    }
+
     static function register($email, $password, $fio, $specialty)
     {
         $user = \R::findOne(self::$table, 'email = ?', [$email]);
